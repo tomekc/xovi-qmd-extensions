@@ -34,3 +34,7 @@ Works well together with ingatellent's
 and [hideDocumentClose.qmd](https://github.com/ingatellent/xovi-qmd-extensions/blob/main/3.28/hideDocumentClose.qmd).
 
 Tested on xochitl 3.28.0.172 (Paper Pro Move). It may work on the Paper Pro too, but that is untested.
+
+## License
+
+[MIT](LICENSE)
