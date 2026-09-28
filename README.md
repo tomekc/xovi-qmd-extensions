@@ -19,7 +19,7 @@ To uninstall, delete the file and restart xochitl.
 
 Replaces the **Redo** button in the document toolbar with a color picker for the active pen.
 
-![Screen shot](color-dropdown.png)
+![Screen shot of color drop down](color-dropdown.png)
 
 On the Paper Pro Move the toolbar has only a few slots. Changing color normally takes two taps: open the pen menu,
 then pick a color. This extension puts the color palette one tap away.
@@ -40,6 +40,8 @@ Tested on xochitl 3.28.0.172 (Paper Pro Move). It may work on the Paper Pro too,
 ### compactToolbarOnMove.qmd
 
 Makes the toolbar buttons slightly narrower, so one more tool fits on the toolbar.
+
+![Screen shot of narrower buttons](squeeze-buttons.png)
 
 Stock buttons are 112 px wide. On the Move's short edge that leaves room for 7 tools, even with the close button hidden.
 This extension reduces each slot to 104 px, which gives 8 tools. The next tool by priority, **Layers**, then appears on the toolbar.
