@@ -19,6 +19,8 @@ To uninstall, delete the file and restart xochitl.
 
 Replaces the **Redo** button in the document toolbar with a color picker for the active pen.
 
+![Screen shot](color-dropdown.png)
+
 On the Paper Pro Move the toolbar has only a few slots. Changing color normally takes two taps: open the pen menu,
 then pick a color. This extension puts the color palette one tap away.
 
