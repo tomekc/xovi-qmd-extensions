@@ -37,6 +37,19 @@ and [hideDocumentClose.qmd](https://github.com/ingatellent/xovi-qmd-extensions/b
 
 Tested on xochitl 3.28.0.172 (Paper Pro Move). It may work on the Paper Pro too, but that is untested.
 
+### compactToolbarOnMove.qmd
+
+Makes the toolbar buttons slightly narrower, so one more tool fits on the toolbar.
+
+Stock buttons are 112 px wide. On the Move's short edge that leaves room for 7 tools, even with the close button hidden.
+This extension reduces each slot to 104 px, which gives 8 tools. The next tool by priority, **Layers**, then appears on the toolbar.
+
+- Only the padding shrinks. Icons keep their size, and the toolbar keeps its thickness.
+- It works for top, bottom and side toolbar positions.
+- To tune it, change `compactToolSize` at the top of the file. On the Move, 106 or less gives the extra slot.
+
+Tested on xochitl 3.28.0.172 (Paper Pro Move), together with `colorDropdownOnMove.qmd`, `enableSecondaryPenOnMove.qmd` and `hideDocumentClose.qmd`.
+
 ## License
 
 [MIT](LICENSE)

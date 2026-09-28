@@ -1,0 +1,45 @@
+; compactToolbarOnMove.qmd - xochitl 3.28 (written against 3.28.0.172 sources)
+;
+; Makes the toolbar slots a bit narrower, so one more tool fits.
+;
+; Stock: every slot is ArkTokens controlsHeight.large = 112 px. The number of tools is
+;   floor(toolbar length / 112) - 1   (-1 for the hide/show button)
+; On the Move (954 px short edge, close button hidden) that gives 7 tools.
+; With 104 px slots it gives floor(954 / 104) - 1 = 8, so Layers (priority 70) fits too.
+; With the close button visible it gives 7 instead of 6.
+;
+; Only the slot length along the toolbar shrinks, via Layout.maximumWidth/Height. The toolbar
+; stays 112 px thick and the icons keep their size. Only the padding around them gets smaller.
+; To tune it, change compactToolSize. Values above 106 give no extra slot on the Move.
+
+AFFECT /qt/qml/xofm/libs/toolbar/qml/Toolbar.qml
+    TRAVERSE FocusScope
+        LOCATE BEFORE ALL
+        INSERT {
+            readonly property int compactToolSize: 104
+            readonly property bool compactHorizontal: root.position === ToolbarPositioner.Position.Top
+                || root.position === ToolbarPositioner.Position.Bottom
+        }
+        REPLACE showableToolsCount WITH {
+            readonly property int showableToolsCount: Math.floor(Math.max(innerWidth, innerHeight) / root.compactToolSize) - 1
+        }
+    END TRAVERSE
+
+    ; Tool slots (component ToolLoader: Loader, inside Item#toolbar)
+    TRAVERSE FocusScope > Item#toolbar > Loader
+        LOCATE AFTER ALL
+        INSERT {
+            Layout.maximumWidth: root.compactHorizontal ? root.compactToolSize : Number.POSITIVE_INFINITY
+            Layout.maximumHeight: root.compactHorizontal ? Number.POSITIVE_INFINITY : root.compactToolSize
+        }
+    END TRAVERSE
+
+    ; The hide/show toggle takes one slot as well
+    TRAVERSE FocusScope > Item#toolbar > GridLayout#toolLayout > ArkControls.ToolButton#hideShowButton
+        LOCATE AFTER ALL
+        INSERT {
+            Layout.maximumWidth: root.compactHorizontal ? root.compactToolSize : Number.POSITIVE_INFINITY
+            Layout.maximumHeight: root.compactHorizontal ? Number.POSITIVE_INFINITY : root.compactToolSize
+        }
+    END TRAVERSE
+END AFFECT
