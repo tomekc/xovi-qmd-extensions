@@ -1,0 +1,136 @@
+; colorDropdownOnMove.qmd - xochitl 3.28 (tested against 3.28.0.172 sources)
+;
+; Turns the Redo toolbar button into a color picker for the active pen.
+; The button shows a dot in the current pen color. Tap it to open a grid of
+; colors (the same palette as the pen menu). Picking a color applies it to the
+; active pen (primary or secondary) and closes the panel.
+; The button is disabled while the eraser or selection tool is active.
+;
+; Colors go through toolbar.penColorSelected(rgb, paletteEnum). DocumentView
+; handles that signal and writes documentViewTools.activePen.color/.colorCode.
+; That is the same path the stock pen menu uses.
+
+AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
+    IMPORT com.remarkable 1.0
+    IMPORT xofm.libs.epaper 1.0 Epaper
+
+    TRAVERSE ToolbarTool#root
+        REPLACE objectName WITH { objectName: "colorDropdownButton" }
+        REPLACE label WITH { label: qsTr("Color") }
+        REPLACE iconSource WITH { iconSource: "" }
+        REPLACE enabled WITH { enabled: root.writingPenActive }
+        REPLACE implicitlySelected WITH { implicitlySelected: root.foldoutVisible }
+        ; The stock tooltip is tied to the Redo onboarding and to press/release logic we no longer use.
+        REPLACE toolTip WITH { toolTip: null }
+        ; Non-sticky tool (like Tags): the first press opens the foldout, the second press
+        ; returns to the previously selected pen (Toolbar._select -> selectLastTool).
+        REPLACE onPressed WITH { onPressed: root.select(root) }
+        REPLACE onClicked WITH { onClicked: {} }
+        REPLACE onReleased WITH { onReleased: {} }
+        REPLACE onCanceled WITH { onCanceled: {} }
+
+        LOCATE AFTER ALL
+        INSERT {
+            // toolbar.selectedPen is the PenTool item (primary/secondary/eraser/selection menu).
+            readonly property Item selectedPenTool: root.toolbar.selectedPen
+            readonly property QtObject pen: selectedPenTool ? selectedPenTool.pen : null
+            readonly property bool writingPenActive: !!selectedPenTool
+                && (selectedPenTool.penToolType === "primary" || selectedPenTool.penToolType === "secondary")
+            hasMinimumFoldoutWidth: false
+
+            PenColorModel {
+                id: dropdownColorModel
+                tool: root.pen ? root.pen.tool : 0
+                colorProfile: root.toolbar.toolbarProvider.colorProfile
+            }
+
+            // Button face: a dot in the active pen's color (same style as the pen menu indicator).
+            content: Item {
+                id: dropdownIndicator
+                anchors.fill: parent
+
+                readonly property color bodyColor: root.pen
+                    ? dropdownColorModel.displayColor(root.pen.color, root.pen.colorCode)
+                    : "transparent"
+                readonly property bool highlighted: root.selected || root.implicitlySelected
+
+                Rectangle {
+                    id: dropdownDot
+                    anchors.centerIn: parent
+                    width: 34
+                    height: 34
+                    radius: width / 2
+                    color: root.writingPenActive ? dropdownIndicator.bodyColor : "transparent"
+                    border.width: 2
+                    border.color: dropdownIndicator.highlighted ? "white" : (root.writingPenActive ? "black" : "gray")
+                    antialiasing: root.antialiasing
+
+                    Epaper.ScreenModeItem {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        visible: EPFramebuffer.hasCapability(EPFramebuffer.Capability.Color)
+                        mode: Epaper.ScreenModeItem.Content
+                        objectName: "color-dropdown-color"
+                    }
+                }
+            }
+
+            foldoutContent: ColumnLayout {
+                spacing: 0
+
+                ArkControls.FoldoutSectionHeader {
+                    label: qsTr("Color")
+                    antialiasing: root.antialiasing
+                    Layout.fillWidth: true
+                }
+
+                FoldoutGrid {
+                    columns: 3
+                    Layout.fillWidth: true
+
+                    Repeater {
+                        model: dropdownColorModel
+                        ArkControls.FoldoutGridItem {
+                            id: dropdownColorItem
+                            required property var displayColor
+                            required property string displayName
+                            required property int toolColor
+                            required property var rgb
+                            required property bool stacked
+                            required property int borderWidth
+                            focusPolicy: Qt.NoFocus
+                            label: qsTranslate("xofm::libs::toolbar::PenColorModel", displayName)
+                            selected: {
+                                if (!root.pen || root.pen.color !== toolColor) {
+                                    return false;
+                                }
+                                if (toolColor === Line.ArgbCode) {
+                                    return rgb === root.pen.colorCode;
+                                }
+                                return true;
+                            }
+                            iconComponent: ArkControls.ColorSwatch {
+                                size: 39
+                                borderColor: dropdownColorItem.selected ? "white" : "black"
+                                color: displayColor
+                                duoColor: stacked ? Qt.darker(displayColor, 1.6) : ""
+                                duoOpacity: 1
+                                antialiasing: false
+                                borderWidth: dropdownColorItem.borderWidth
+                                rotation: stacked && borderWidth == 0 ? 90 : 0
+                            }
+                            onPressed: {
+                                root.toolbar.penColorSelected(rgb, toolColor);
+                                root.toolbar.selectLastTool();
+                            }
+                            implicitWidth: 112
+                            implicitHeight: 112
+                            // Work-around for incorrect spacing applied by FoldoutGridItem (copied from PenTool):
+                            Component.onCompleted: contentItem.spacing = 8
+                        }
+                    }
+                }
+            }
+        }
+    END TRAVERSE
+END AFFECT

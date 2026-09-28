@@ -1,0 +1,36 @@
+# xovi-qmd-extensions
+
+QMD extensions for the reMarkable Paper Pro Move, loaded by [XOVI](https://github.com/asivery/xovi) and
+[qt-resource-rebuilder](https://github.com/asivery/rm-xovi-extensions/tree/master/qt-resource-rebuilder).
+
+Each file lives in a folder named after the xochitl version it was written for. The files may also work on nearby versions.
+
+## How to install
+
+1. Copy the `.qmd` file to `/home/root/xovi/exthome/qt-resource-rebuilder/` on the tablet.
+2. Restart xochitl through xovi (`xovi/start`).
+3. After an OS update, run `xovi/rebuild_hashtable`.
+
+To uninstall, delete the file and restart xochitl.
+
+## Extensions
+
+### colorDropdownOnMove.qmd
+
+Replaces the **Redo** button in the document toolbar with a color picker for the active pen.
+
+On the Paper Pro Move the toolbar has only a few slots. Changing color normally takes two taps: open the pen menu,
+then pick a color. This extension puts the color palette one tap away.
+
+- The button shows a dot in the current pen color.
+- Tap it to open a grid with the pen menu's colors. The highlighter and shader palettes appear when those tools are active.
+- Picking a color applies it to the active pen, primary or secondary, and closes the panel. Tapping the button again also closes it.
+- The button is disabled while the eraser or the selection tool is active.
+
+Redo is no longer on the toolbar. Undo stays.
+
+Works well together with ingatellent's
+[enableSecondaryPenOnMove.qmd](https://github.com/ingatellent/xovi-qmd-extensions/blob/main/3.28/enableSecondaryPenOnMove.qmd)
+and [hideDocumentClose.qmd](https://github.com/ingatellent/xovi-qmd-extensions/blob/main/3.28/hideDocumentClose.qmd).
+
+Tested on xochitl 3.28.0.172 (Paper Pro Move). It may work on the Paper Pro too, but that is untested.
