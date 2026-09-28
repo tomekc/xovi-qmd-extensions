@@ -9,10 +9,17 @@
 ; Colors go through toolbar.penColorSelected(rgb, paletteEnum). DocumentView
 ; handles that signal and writes documentViewTools.activePen.color/.colorCode.
 ; That is the same path the stock pen menu uses.
+;
+; Optional thickness row below the colors. It is hidden for highlighters, which have no
+; thickness choice, the same rule the pen menu uses. Thickness goes through
+; toolbar.penThicknessSelected(thickness).
+; Turn it on or off in Settings, below "Toolbar position". The value is stored with QtCore
+; Settings (category "colorDropdownOnMove") and takes effect the next time a document is opened.
 
 AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
     IMPORT com.remarkable 1.0
     IMPORT xofm.libs.epaper 1.0 Epaper
+    IMPORT QtCore 6.5 QtCore
 
     TRAVERSE ToolbarTool#root
         REPLACE objectName WITH { objectName: "colorDropdownButton" }
@@ -36,12 +43,26 @@ AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
             readonly property QtObject pen: selectedPenTool ? selectedPenTool.pen : null
             readonly property bool writingPenActive: !!selectedPenTool
                 && (selectedPenTool.penToolType === "primary" || selectedPenTool.penToolType === "secondary")
+            // Same rule as the stock pen menu (WritingTool.hasWidthOption).
+            readonly property bool penHasWidthOption: !!root.pen
+                && root.pen.tool !== Line.Highlighterv2 && root.pen.tool !== Line.Highlighter
+            readonly property bool showThicknessRow: dropdownSettings.showThickness && root.penHasWidthOption
             hasMinimumFoldoutWidth: false
+
+            QtCore.Settings {
+                id: dropdownSettings
+                category: "colorDropdownOnMove"
+                property bool showThickness: true
+            }
 
             PenColorModel {
                 id: dropdownColorModel
                 tool: root.pen ? root.pen.tool : 0
                 colorProfile: root.toolbar.toolbarProvider.colorProfile
+            }
+
+            PenThicknessModel {
+                id: dropdownThicknessModel
             }
 
             // Button face: a dot in the active pen's color (same style as the pen menu indicator).
@@ -129,6 +150,76 @@ AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
                             Component.onCompleted: contentItem.spacing = 8
                         }
                     }
+                }
+
+                ArkControls.FoldoutDivider {
+                    visible: root.showThicknessRow
+                    Layout.fillWidth: true
+                }
+
+                ArkControls.FoldoutSectionHeader {
+                    visible: root.showThicknessRow
+                    label: root.pen
+                        ? qsTranslate(dropdownThicknessModel.translationContext(), dropdownThicknessModel.nameForThickness(root.pen.thickness))
+                        : ""
+                    antialiasing: root.antialiasing
+                    Layout.fillWidth: true
+                }
+
+                FoldoutGrid {
+                    visible: root.showThicknessRow
+                    columns: 3
+                    Layout.fillWidth: true
+
+                    Repeater {
+                        model: dropdownThicknessModel
+                        ArkControls.FoldoutItem {
+                            required property string iconPath
+                            required property string displayName
+                            required property int thickness
+                            iconSource: iconPath
+                            selected: !!root.pen && root.pen.thickness === thickness
+                            antialiasing: root.antialiasing
+                            focusPolicy: Qt.NoFocus
+                            onPressed: {
+                                root.toolbar.penThicknessSelected(thickness);
+                                root.toolbar.selectLastTool();
+                            }
+                            implicitWidth: implicitHeight
+                        }
+                    }
+                }
+            }
+        }
+    END TRAVERSE
+END AFFECT
+
+; Settings toggle, shown below the "Toolbar position" panel in Settings.
+AFFECT /qt/qml/xofm/modules/toolbar/qml/ToolbarPositionChooserWidget.qml
+    IMPORT QtCore 6.5 QtCore
+
+    TRAVERSE Item#root
+        REPLACE implicitHeight WITH {
+            implicitHeight: panel.implicitHeight + colorDropdownPanel.implicitHeight
+        }
+
+        LOCATE AFTER ALL
+        INSERT {
+            QtCore.Settings {
+                id: colorDropdownSettings
+                category: "colorDropdownOnMove"
+                property bool showThickness: true
+            }
+
+            ArkControls.Panel {
+                id: colorDropdownPanel
+                y: panel.height
+                width: parent.width
+                label: qsTr("Color picker: thickness")
+                description: qsTr("Show pen thickness below the colors in the toolbar color picker.")
+                action: ArkControls.Toggle {
+                    checked: colorDropdownSettings.showThickness
+                    onClicked: colorDropdownSettings.showThickness = !colorDropdownSettings.showThickness
                 }
             }
         }

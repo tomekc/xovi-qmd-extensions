@@ -27,9 +27,15 @@ then pick a color. This extension puts the color palette one tap away.
 - The button shows a dot in the current pen color.
 - Tap it to open a grid with the pen menu's colors. The highlighter and shader palettes appear when those tools are active.
 - Picking a color applies it to the active pen, primary or secondary, and closes the panel. Tapping the button again also closes it.
+- Below the colors, a thickness row lets you change the pen's thickness. Picking a thickness also closes the panel.
+  The row is hidden for highlighters, which have no thickness choice.
 - The button is disabled while the eraser or the selection tool is active.
+- The button is moved right after the second pen.
 
 Redo is no longer on the toolbar. Undo stays.
+
+**Settings:** to turn the thickness row on or off, use the **Color picker: thickness** toggle in Settings, below
+**Toolbar position**. It is on by default. The change takes effect the next time you open a document.
 
 Works well together with ingatellent's
 [enableSecondaryPenOnMove.qmd](https://github.com/ingatellent/xovi-qmd-extensions/blob/main/3.28/enableSecondaryPenOnMove.qmd)
