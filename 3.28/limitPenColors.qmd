@@ -1,0 +1,193 @@
+; limitPenColors.qmd - xochitl 3.28 (written against 3.28.0.172 sources)
+;
+; Choose which colors are offered for pens, highlighters and shaders. Hidden colors disappear
+; from the stock pen menus (primary and secondary pen) and from colorDropdownOnMove.qmd.
+;
+; Settings: Settings, below "Toolbar position" -> "Available colors". Tap a swatch to show or hide it.
+; The last visible color of a palette can't be hidden. Changes apply the next time a menu is opened.
+;
+; The list of hidden colors is stored with QtCore Settings, category "penColorFilter", key "hiddenColors".
+; It is a comma-separated list of keys: "c<paletteEnum>" for palette colors, "a<argb hex>" for ARGB colors
+; (highlighters and shaders). An empty list means all colors are shown. Hiding a color doesn't change
+; strokes already drawn, and it doesn't change the pen's current color.
+
+; Stock pen menu (WritingTool is used for both the primary and the secondary pen)
+AFFECT /qt/qml/xofm/libs/toolbar/qml/WritingTool.qml
+    IMPORT QtCore 6.5 QtCore
+
+    TRAVERSE PenTool
+        LOCATE BEFORE ALL
+        INSERT {
+            // The pen menus live as long as the toolbar, so re-read the setting each time the menu opens.
+            QtCore.Settings {
+                id: penColorFilter
+                category: "penColorFilter"
+            }
+            property string hiddenColorsCache: penColorFilter.value("hiddenColors", "")
+            onFoldoutVisibleChanged: {
+                if (foldoutVisible) {
+                    penColorFilter.sync();
+                    hiddenColorsCache = penColorFilter.value("hiddenColors", "");
+                }
+            }
+            function isColorHidden(toolColor, rgb) {
+                const key = toolColor === Line.ArgbCode ? "a" + (rgb >>> 0).toString(16) : "c" + toolColor;
+                return hiddenColorsCache.split(",").indexOf(key) !== -1;
+            }
+        }
+
+        TRAVERSE FoldoutGrid:ColorGrid > Repeater > ArkControls.FoldoutGridItem
+            LOCATE AFTER ALL
+            INSERT {
+                visible: !root.isColorHidden(toolColor, rgb)
+            }
+        END TRAVERSE
+    END TRAVERSE
+END AFFECT
+
+; Settings UI, shown below the "Toolbar position" panel (this widget has the toolbarProvider,
+; whose colorProfile PenColorModel needs).
+AFFECT /qt/qml/xofm/modules/toolbar/qml/ToolbarPositionChooserWidget.qml
+    IMPORT QtCore 6.5 QtCore
+    IMPORT com.remarkable 1.0
+
+    TRAVERSE Item#root
+        ; Other extensions (e.g. colorDropdownOnMove.qmd) add panels here too. They all use the same
+        ; replacement, so the order in which the mods are applied doesn't matter.
+        REPLACE implicitHeight WITH {
+            implicitHeight: childrenRect.height
+        }
+
+        LOCATE AFTER ALL
+        INSERT {
+            QtCore.Settings {
+                id: penColorFilterSettings
+                category: "penColorFilter"
+                property string hiddenColors: ""
+            }
+
+            function penColorKey(toolColor, rgb) {
+                return toolColor === Line.ArgbCode ? "a" + (rgb >>> 0).toString(16) : "c" + toolColor;
+            }
+
+            function isPenColorHidden(toolColor, rgb) {
+                return penColorFilterSettings.hiddenColors.split(",").indexOf(root.penColorKey(toolColor, rgb)) !== -1;
+            }
+
+            // Toggle one color. A palette always keeps at least one visible color.
+            function togglePenColor(repeater, toolColor, rgb) {
+                const key = root.penColorKey(toolColor, rgb);
+                let hidden = penColorFilterSettings.hiddenColors.split(",").filter(k => k !== "");
+                const index = hidden.indexOf(key);
+                if (index !== -1) {
+                    hidden.splice(index, 1);
+                } else {
+                    let visibleCount = 0;
+                    for (let i = 0; i < repeater.count; i++) {
+                        if (repeater.itemAt(i)?.selected) {
+                            visibleCount++;
+                        }
+                    }
+                    if (visibleCount <= 1) {
+                        return;
+                    }
+                    hidden.push(key);
+                }
+                penColorFilterSettings.hiddenColors = hidden.join(",");
+                // Write through right away, so open documents see it the next time a menu opens.
+                penColorFilterSettings.setValue("hiddenColors", penColorFilterSettings.hiddenColors);
+                penColorFilterSettings.sync();
+            }
+
+            component PenColorFilterSection: ColumnLayout {
+                id: section
+                required property string title
+                required property int tool
+                spacing: 0
+                Layout.fillWidth: true
+
+                PenColorModel {
+                    id: sectionModel
+                    tool: section.tool
+                    colorProfile: root.toolbarProvider.colorProfile
+                }
+
+                ArkControls.Caption {
+                    text: section.title
+                    Layout.fillWidth: true
+                }
+
+                Flow {
+                    Layout.fillWidth: true
+                    Repeater {
+                        id: sectionRepeater
+                        model: sectionModel
+                        ArkControls.FoldoutGridItem {
+                            id: filterItem
+                            required property var displayColor
+                            required property string displayName
+                            required property int toolColor
+                            required property var rgb
+                            required property bool stacked
+                            required property int borderWidth
+                            focusPolicy: Qt.NoFocus
+                            label: qsTranslate("xofm::libs::toolbar::PenColorModel", displayName)
+                            // "selected" (inverted) means the color is available.
+                            selected: !root.isPenColorHidden(toolColor, rgb)
+                            iconComponent: ArkControls.ColorSwatch {
+                                size: 39
+                                borderColor: filterItem.selected ? "white" : "black"
+                                color: displayColor
+                                duoColor: stacked ? Qt.darker(displayColor, 1.6) : ""
+                                duoOpacity: 1
+                                antialiasing: false
+                                borderWidth: filterItem.borderWidth
+                                rotation: stacked && borderWidth == 0 ? 90 : 0
+                            }
+                            onPressed: root.togglePenColor(sectionRepeater, toolColor, rgb)
+                            implicitWidth: 112
+                            implicitHeight: 112
+                            Component.onCompleted: contentItem.spacing = 8
+                        }
+                    }
+                }
+            }
+
+            ArkControls.Panel {
+                id: penColorFilterPanel
+                // Stack below every panel that comes before this one.
+                y: {
+                    let offset = 0;
+                    for (const child of root.children) {
+                        if (child === penColorFilterPanel) {
+                            break;
+                        }
+                        offset += child.visible ? child.height : 0;
+                    }
+                    return offset;
+                }
+                width: parent.width
+                label: qsTr("Available colors")
+                description: qsTr("Highlighted colors are shown in the pen menu and the color picker. Tap to show or hide a color.")
+                showAttachment: true
+
+                attachment: ColumnLayout {
+                    spacing: ArkControls.Values.spacing.medium
+
+                    PenColorFilterSection {
+                        title: qsTr("Pens")
+                        tool: Line.Ballpointv2
+                    }
+                    PenColorFilterSection {
+                        title: qsTr("Highlighter")
+                        tool: Line.Highlighterv2
+                    }
+                    PenColorFilterSection {
+                        title: qsTr("Shader")
+                        tool: Line.ShadingMarker
+                    }
+                }
+            }
+        }
+    END TRAVERSE
+END AFFECT

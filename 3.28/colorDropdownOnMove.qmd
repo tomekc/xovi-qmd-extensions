@@ -14,7 +14,7 @@
 ; thickness choice, the same rule the pen menu uses. Thickness goes through
 ; toolbar.penThicknessSelected(thickness).
 ; Turn it on or off in Settings, below "Toolbar position". The value is stored with QtCore
-; Settings (category "colorDropdownOnMove") and takes effect the next time a document is opened.
+; Settings (category "colorDropdownOnMove") and takes effect the next time the dropdown opens.
 
 AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
     IMPORT com.remarkable 1.0
@@ -46,13 +46,36 @@ AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
             // Same rule as the stock pen menu (WritingTool.hasWidthOption).
             readonly property bool penHasWidthOption: !!root.pen
                 && root.pen.tool !== Line.Highlighterv2 && root.pen.tool !== Line.Highlighter
-            readonly property bool showThicknessRow: dropdownSettings.showThickness && root.penHasWidthOption
+            readonly property bool showThicknessRow: root.showThicknessSetting && root.penHasWidthOption
             hasMinimumFoldoutWidth: false
 
+            // The toolbar outlives documents, so re-read both settings every time the dropdown opens.
             QtCore.Settings {
                 id: dropdownSettings
                 category: "colorDropdownOnMove"
-                property bool showThickness: true
+            }
+            // Colors hidden with limitPenColors.qmd. Empty (show everything) when that extension is not installed.
+            QtCore.Settings {
+                id: dropdownColorFilter
+                category: "penColorFilter"
+            }
+            property bool showThicknessSetting: root.readShowThickness()
+            property string hiddenColorsCache: dropdownColorFilter.value("hiddenColors", "")
+            function readShowThickness() {
+                const v = dropdownSettings.value("showThickness", true);
+                return v === true || v === "true";
+            }
+            onFoldoutVisibleChanged: {
+                if (foldoutVisible) {
+                    dropdownSettings.sync();
+                    dropdownColorFilter.sync();
+                    showThicknessSetting = root.readShowThickness();
+                    hiddenColorsCache = dropdownColorFilter.value("hiddenColors", "");
+                }
+            }
+            function isColorHidden(toolColor, rgb) {
+                const key = toolColor === Line.ArgbCode ? "a" + (rgb >>> 0).toString(16) : "c" + toolColor;
+                return hiddenColorsCache.split(",").indexOf(key) !== -1;
             }
 
             PenColorModel {
@@ -119,6 +142,7 @@ AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
                             required property var rgb
                             required property bool stacked
                             required property int borderWidth
+                            visible: !root.isColorHidden(toolColor, rgb)
                             focusPolicy: Qt.NoFocus
                             label: qsTranslate("xofm::libs::toolbar::PenColorModel", displayName)
                             selected: {
@@ -199,8 +223,10 @@ AFFECT /qt/qml/xofm/modules/toolbar/qml/ToolbarPositionChooserWidget.qml
     IMPORT QtCore 6.5 QtCore
 
     TRAVERSE Item#root
+        ; Other extensions (e.g. limitPenColors.qmd) add panels here too. They all use the same
+        ; replacement, so the order in which the mods are applied doesn't matter.
         REPLACE implicitHeight WITH {
-            implicitHeight: panel.implicitHeight + colorDropdownPanel.implicitHeight
+            implicitHeight: childrenRect.height
         }
 
         LOCATE AFTER ALL
@@ -213,13 +239,27 @@ AFFECT /qt/qml/xofm/modules/toolbar/qml/ToolbarPositionChooserWidget.qml
 
             ArkControls.Panel {
                 id: colorDropdownPanel
-                y: panel.height
+                // Stack below every panel that comes before this one.
+                y: {
+                    let offset = 0;
+                    for (const child of root.children) {
+                        if (child === colorDropdownPanel) {
+                            break;
+                        }
+                        offset += child.visible ? child.height : 0;
+                    }
+                    return offset;
+                }
                 width: parent.width
                 label: qsTr("Color picker: thickness")
                 description: qsTr("Show pen thickness below the colors in the toolbar color picker.")
                 action: ArkControls.Toggle {
                     checked: colorDropdownSettings.showThickness
-                    onClicked: colorDropdownSettings.showThickness = !colorDropdownSettings.showThickness
+                    onClicked: {
+                        colorDropdownSettings.showThickness = !colorDropdownSettings.showThickness;
+                        colorDropdownSettings.setValue("showThickness", colorDropdownSettings.showThickness);
+                        colorDropdownSettings.sync();
+                    }
                 }
             }
         }

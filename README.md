@@ -35,7 +35,9 @@ then pick a color. This extension puts the color palette one tap away.
 Redo is no longer on the toolbar. Undo stays.
 
 **Settings:** to turn the thickness row on or off, use the **Color picker: thickness** toggle in Settings, below
-**Toolbar position**. It is on by default. The change takes effect the next time you open a document.
+**Toolbar position**. It is on by default. The change takes effect the next time you open the color picker.
+
+If `limitPenColors.qmd` is installed, the color picker shows only the colors you left available.
 
 Works well together with ingatellent's
 [enableSecondaryPenOnMove.qmd](https://github.com/ingatellent/xovi-qmd-extensions/blob/main/3.28/enableSecondaryPenOnMove.qmd)
@@ -57,6 +59,22 @@ This extension reduces each slot to 104 px, which gives 8 tools. The next tool b
 - To tune it, change `compactToolSize` at the top of the file. On the Move, 106 or less gives the extra slot.
 
 Tested on xochitl 3.28.0.172 (Paper Pro Move), together with `colorDropdownOnMove.qmd`, `enableSecondaryPenOnMove.qmd` and `hideDocumentClose.qmd`.
+
+### limitPenColors.qmd
+
+Choose which colors are offered for pens, highlighters and shaders. Fewer colors mean fewer distractions and
+a smaller color picker.
+
+- In Settings, below **Toolbar position**, the **Available colors** panel shows the Pens, Highlighter and Shader palettes.
+  Highlighted swatches are available. Tap a swatch to show or hide it.
+- Hidden colors disappear from the stock pen menus and from the `colorDropdownOnMove.qmd` color picker.
+- The last visible color of a palette can't be hidden.
+- The change takes effect the next time a menu opens. You don't need to restart.
+- Hiding a color doesn't change strokes you've already drawn, and it doesn't change the pen's current color.
+
+Works on its own. Also works together with `colorDropdownOnMove.qmd`, and it doesn't matter which one is installed first.
+
+Tested on xochitl 3.28.0.172 (Paper Pro Move).
 
 ## License
 
