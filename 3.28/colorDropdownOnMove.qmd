@@ -3,7 +3,7 @@
 ; Turns the Redo toolbar button into a color picker for the active pen.
 ; The button shows a dot in the current pen color. Tap it to open a grid of
 ; colors (the same palette as the pen menu). Picking a color applies it to the
-; active pen (primary or secondary) and closes the panel.
+; active pen (primary or secondary) and closes the panel. The button is moved next to the second pen.
 ; The button is disabled while the eraser or selection tool is active.
 ;
 ; Colors go through toolbar.penColorSelected(rgb, paletteEnum). DocumentView
@@ -134,3 +134,13 @@ AFFECT /qt/qml/xofm/libs/toolbar/qml/RedoButton.qml
         }
     END TRAVERSE
 END AFFECT
+
+; Move the button next to the second pen. Toolbar order comes from the device config:
+; PrimaryPen 0, SecondaryPen 10, Typing 20, Eraser 30, ... Redo 70.
+; chiappa.json only overrides the keys it lists, so setting "order" on Redo is enough.
+; This is inserted right after "tools": { so it doesn't touch the SecondaryPen entry
+; that enableSecondaryPenOnMove.qmd looks for.
+AFFECT REBUILD /src/xofm/bundles/chiappa/chiappa.json
+LOCATE AFTER STREAM \"tools": {\
+INSERT STREAM \"Redo": { "order": 15 },\
+END REBUILD
