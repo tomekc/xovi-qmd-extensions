@@ -5,6 +5,13 @@ QMD extensions for the reMarkable Paper Pro Move, loaded by [XOVI](https://githu
 
 Each file lives in a folder named after the xochitl version it was written for. The files may also work on nearby versions.
 
+| Extension | Description |
+|---|---|
+| [colorDropdownOnMove.qmd](#colordropdownonmoveqmd) | Replaces the Redo button with a one-tap color picker for the active pen, placed right after the second pen. It can also show pen thickness, which you turn on or off in Settings. |
+| [compactToolbarOnMove.qmd](#compacttoolbaronmoveqmd) | Makes toolbar buttons slightly narrower (104 instead of 112 px) so one more tool fits. On the Move this adds the Layers button to the toolbar. |
+| [limitPenColors.qmd](#limitpencolorsqmd) | Lets you choose in Settings which pen, highlighter and shader colors are available. Hidden colors disappear from the pen menus and the color picker, for fewer distractions. |
+| [layerIndicator.qmd](#layerindicatorqmd) | Shows the active layer's number in the corner of the Layers toolbar button. It appears only on pages with more than one layer. |
+
 ## How to install
 
 1. Copy the `.qmd` file to `/home/root/xovi/exthome/qt-resource-rebuilder/` on the tablet.
@@ -79,6 +86,8 @@ Tested on xochitl 3.28.0.172 (Paper Pro Move).
 ### layerIndicator.qmd
 
 Shows which layer is active, as a small number in the top corner of the **Layers** toolbar button.
+
+![Screen shot of layer indicator](layer-indicator.png)
 
 - 1 is the bottom (default) layer, 2 is the layer above it, and so on.
 - The number is shown only when the page has more than one layer.
