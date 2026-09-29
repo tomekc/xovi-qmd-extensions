@@ -1,0 +1,102 @@
+; layerIndicator.qmd - xochitl 3.28 (written against 3.28.0.172 sources)
+;
+; Shows the number of the active layer in the top corner of the Layers toolbar button.
+; 1 is the bottom (default) layer, 2 the layer above it, and so on (max 5).
+; The badge is shown only when the page has more than one layer, and only for the button
+; on the toolbar itself, not for the entry in the overflow menu.
+;
+; toolbar.layersModel is the current page's layer list. Its roles include layerIndex (0 = bottom)
+; and layerSelected. It is the same model the Layers foldout uses.
+
+AFFECT /qt/qml/xofm/libs/toolbar/qml/LayersMenu.qml
+    TRAVERSE ToolbarTool#root
+        LOCATE AFTER ALL
+        INSERT {
+            property int activeLayerNumber: 1
+            // Only on the toolbar itself. In the overflow menu the tool is a FoldoutButton list row.
+            readonly property bool showLayerBadge: root.type === ToolbarTool.Type.ToolbarButton
+                && !!root.model && root.model.count > 1
+
+            content: Item {
+                id: layerIndicator
+                anchors.fill: parent
+
+                // Invisible watchers: record which layer is selected. Handlers cover selection
+                // changes, reordering, and model resets (page change, add or delete a layer).
+                Repeater {
+                    model: root.model
+                    Item {
+                        required property int layerIndex
+                        required property bool layerSelected
+                        visible: false
+                        function report() {
+                            if (layerSelected) {
+                                root.activeLayerNumber = layerIndex + 1;
+                            }
+                        }
+                        onLayerSelectedChanged: report()
+                        onLayerIndexChanged: report()
+                        Component.onCompleted: report()
+                    }
+                }
+
+                // Badge: same spot as the pen color dot on the pen buttons.
+                Rectangle {
+                    id: layerBadge
+                    readonly property int margin: 8
+                    readonly property bool highlighted: root.selected || root.implicitlySelected
+                    visible: root.showLayerBadge
+                    width: 30
+                    height: 30
+                    radius: width / 2
+                    color: highlighted ? "white" : "black"
+                    antialiasing: root.antialiasing
+
+                    anchors {
+                        top: parent.top
+                        topMargin: root.topInset + margin
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.activeLayerNumber
+                        color: layerBadge.highlighted ? "black" : "white"
+                        font.pixelSize: 20
+                        font.bold: true
+                    }
+
+                    states: [
+                        State {
+                            name: "leftPosition"
+                            when: root.toolbar.position === ToolbarPositioner.Position.Right
+                            AnchorChanges {
+                                target: layerBadge
+                                anchors.left: parent.left
+                                anchors.right: undefined
+                            }
+                            PropertyChanges {
+                                target: layerBadge
+                                anchors.leftMargin: margin
+                                anchors.rightMargin: 0
+                            }
+                        },
+                        State {
+                            name: "rightPosition"
+                            when: (true)
+                            AnchorChanges {
+                                target: layerBadge
+                                anchors.right: parent.right
+                                anchors.left: undefined
+                            }
+                            PropertyChanges {
+                                target: layerBadge
+                                anchors.leftMargin: 0
+                                anchors.rightMargin: margin
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    END TRAVERSE
+END AFFECT

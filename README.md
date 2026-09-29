@@ -76,6 +76,18 @@ Works on its own. Also works together with `colorDropdownOnMove.qmd`, and it doe
 
 Tested on xochitl 3.28.0.172 (Paper Pro Move).
 
+### layerIndicator.qmd
+
+Shows which layer is active, as a small number in the top corner of the **Layers** toolbar button.
+
+- 1 is the bottom (default) layer, 2 is the layer above it, and so on.
+- The number is shown only when the page has more than one layer.
+- It is shown only on the toolbar button itself, not in the overflow menu.
+
+Works well with `compactToolbarOnMove.qmd`, which makes room for the Layers button on the Move's toolbar.
+
+Tested on xochitl 3.28.0.172 (Paper Pro Move).
+
 ## License
 
 [MIT](LICENSE)
